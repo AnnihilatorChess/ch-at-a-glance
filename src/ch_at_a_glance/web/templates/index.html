@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>ch-at-a-glance (dev)</title>
+<style>
+  :root { color-scheme: light dark; }
+  body { font-family: system-ui, sans-serif; margin: 2rem; max-width: 1100px; }
+  h1 { font-size: 1.25rem; margin-bottom: 0.25rem; }
+  p.sub { color: #888; margin-top: 0; margin-bottom: 1.5rem; font-size: 0.9rem; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem; }
+  .card { border: 1px solid #4443; border-radius: 8px; padding: 1rem; }
+  .label { font-weight: 600; font-size: 0.95rem; }
+  .category { color: #888; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.03em; }
+  .now { font-size: 1.6rem; font-weight: 700; margin: 0.4rem 0 0.2rem; }
+  .change { font-size: 0.85rem; }
+  .dot { display: inline-block; width: 0.6em; height: 0.6em; border-radius: 50%; margin-right: 0.35em; }
+  .green { background: #22c55e; } .red { background: #ef4444; } .grey { background: #9ca3af; }
+  .note { color: #888; font-size: 0.75rem; margin-top: 0.5rem; }
+  .empty { color: #ef4444; font-size: 0.85rem; }
+</style>
+</head>
+<body>
+<h1>ch-at-a-glance (dev)</h1>
+<p class="sub">Validation view over the raw pipeline output — not the real dashboard design. {{ cards|length }} indicator(s).</p>
+<div class="grid">
+{% for c in cards %}
+  <div class="card">
+    <div class="category">{{ c.category }}</div>
+    <div class="label">{{ c.label }}</div>
+    {% if c.now is not none %}
+      <div class="now">{{ "%.2f"|format(c.now) }}{{ c.unit }}</div>
+      <div class="change">
+        <span class="dot {{ c.colour['1y'] }}"></span>
+        {% if c.change['1y'] is not none %}
+          {{ "%+.2f"|format(c.change['1y']) }}{{ c.unit }} vs 1y ago
+        {% else %}
+          no 1y comparison yet
+        {% endif %}
+      </div>
+      {{ c.sparkline|safe }}
+    {% else %}
+      <div class="empty">no data yet</div>
+    {% endif %}
+    <div class="note">{{ c.note }}</div>
+  </div>
+{% endfor %}
+</div>
+</body>
+</html>
