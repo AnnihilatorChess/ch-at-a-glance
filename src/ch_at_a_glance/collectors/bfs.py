@@ -23,10 +23,26 @@ from ch_at_a_glance.collectors.base import RawObservation, fetch_with_retry
 
 _HEADERS = {"User-Agent": "ch-at-a-glance/0.1 (personal project, non-commercial)"}
 
-# "LIK (Dezember 2015=100), Detailresultate seit 1982".
-_CPI_DETAIL_XLSX_URL = "https://dam-api.bfs.admin.ch/hub/api/dam/assets/15964066/master"
-_CPI_TOTAL_LABEL_COLUMN = 5
-_CPI_FIRST_DATA_COLUMN = 7
+# National CPI index level, mirrored by canton Zug's open-data portal. The
+# original BFS dam-api asset for this (15964066) turned out to be a frozen
+# snapshot that stopped updating in December 2020 -- this source is the same
+# national index, but actually kept current (verified: updates through most
+# recent published month, not stuck years in the past).
+_CPI_INDEX_CSV_URL = "https://data.zg.ch/store/1/resource/334"
+_GERMAN_MONTHS = {
+    "Januar": 1,
+    "Februar": 2,
+    "März": 3,
+    "April": 4,
+    "Mai": 5,
+    "Juni": 6,
+    "Juli": 7,
+    "August": 8,
+    "September": 9,
+    "Oktober": 10,
+    "November": 11,
+    "Dezember": 12,
+}
 
 # "Schweizerischer Lohnindex, Index und Veraenderung, Basis 2015=100, NOGA08".
 _WAGE_INDEX_CSV_URL = "https://dam-api.bfs.admin.ch/hub/api/dam/assets/36506630/master"
@@ -70,25 +86,29 @@ def _fetch_workbook(url: str) -> openpyxl.Workbook:
 
 
 def fetch_cpi_inflation() -> list[RawObservation]:
-    """Swiss CPI, change vs. same month previous year, monthly, headline ("Total") row.
+    """Swiss CPI, change vs. same month previous year, monthly, national index.
 
-    Source sheet `VAR_m-12` in BFS's LIK detail workbook: one row per basket
-    category, one column per month, values already expressed as % change.
+    The CSV publishes the raw index level (not the % change), so this
+    computes each month's year-over-year change directly against the same
+    calendar month one year earlier.
     """
-    workbook = _fetch_workbook(_CPI_DETAIL_XLSX_URL)
-    sheet = workbook["VAR_m-12"]
-    rows = list(sheet.iter_rows(values_only=True))
-    header_row = rows[3]
-    total_row = next(row for row in rows[4:] if row[_CPI_TOTAL_LABEL_COLUMN] == "Total")
+    rows = _fetch_csv_rows(_CPI_INDEX_CSV_URL)
+    index_by_month: dict[tuple[int, int], float] = {}
+    for row in rows:
+        month = _GERMAN_MONTHS.get(row["monat"])
+        if month is None:
+            continue
+        index_by_month[(int(row["jahr"]), month)] = float(row["index"])
 
     observations: list[RawObservation] = []
-    for header_value, value in zip(
-        header_row[_CPI_FIRST_DATA_COLUMN:], total_row[_CPI_FIRST_DATA_COLUMN:], strict=True
-    ):
-        if not isinstance(header_value, dt.datetime) or not isinstance(value, int | float):
+    for (year, month), value in sorted(index_by_month.items()):
+        prior_value = index_by_month.get((year - 1, month))
+        if prior_value is None:
             continue
         observations.append(
-            RawObservation(date=header_value.date().replace(day=1), value=float(value))
+            RawObservation(
+                date=dt.date(year, month, 1), value=(value / prior_value - 1) * 100
+            )
         )
     return observations
 

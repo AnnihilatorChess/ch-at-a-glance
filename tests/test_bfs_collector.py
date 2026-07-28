@@ -6,6 +6,7 @@ from httpx import Response
 
 from ch_at_a_glance.collectors.bfs import (
     _CO2_EMISSIONS_XLSX_URL,
+    _CPI_INDEX_CSV_URL,
     _GDP_GROWTH_CSV_URL,
     _HOSPITAL_BEDS_XLSX_URL,
     _JOB_VACANCIES_PX_URL,
@@ -14,6 +15,7 @@ from ch_at_a_glance.collectors.bfs import (
     _UNEMPLOYMENT_CSV_URL,
     _WAGE_INDEX_CSV_URL,
     fetch_co2_emissions,
+    fetch_cpi_inflation,
     fetch_gdp_growth,
     fetch_hospital_beds,
     fetch_job_vacancies,
@@ -103,6 +105,30 @@ def test_fetch_unemployment_rate_filters_to_national_percentage_series() -> None
     assert observations[0].date.isoformat() == "2023-01-01"
     assert observations[0].value == 4.90
     assert observations[1].value == 5.14
+
+
+_CPI_INDEX_CSV = (
+    '"jahr","monat","index"\n'
+    '"2023","Januar",100.0\n'
+    '"2023","Februar",101.0\n'
+    '"2024","Januar",102.0\n'
+    '"2024","Februar",103.02\n'
+)
+
+
+@respx.mock
+def test_fetch_cpi_inflation_computes_year_over_year_change() -> None:
+    respx.get(_CPI_INDEX_CSV_URL).mock(
+        return_value=Response(200, content=_CPI_INDEX_CSV.encode("utf-8-sig"))
+    )
+
+    observations = fetch_cpi_inflation()
+
+    assert len(observations) == 2
+    assert observations[0].date.isoformat() == "2024-01-01"
+    assert round(observations[0].value, 2) == 2.0
+    assert observations[1].date.isoformat() == "2024-02-01"
+    assert round(observations[1].value, 2) == 2.0
 
 
 _JOB_VACANCIES_PX = (
