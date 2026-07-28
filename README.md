@@ -10,7 +10,9 @@ Python 3.12, uv, SQLAlchemy 2.0 + Alembic, SQLite (Postgres-ready), httpx, typer
 
 ## Status
 
-Early scaffolding. Data pipeline covers a handful of representative Swiss indicators (BFS PxWeb API) to prove the architecture; not yet the full indicator set from the design doc.
+9 indicators live across Economy, Living Standards, Government, Crime, and Immigration: CPI inflation, GDP growth, unemployment rate, real wages, SNB policy rate, 10-year bond yield, federal gross debt ratio, prison population, net migration. Sources are BFS (via opendata.swiss CSV/XLS, its PxWeb API never worked), SNB's undocumented JSON API, and the EFV's federal budget CSV.
+
+Still missing from the design doc's v1 list, no working structured data source found after a real attempt: house prices, housing starts, petrol price, job vacancies, PKS shoplifting, asylum applications. See `docs/DESIGN.md` for what was tried.
 
 ## Usage
 

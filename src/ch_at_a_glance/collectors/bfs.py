@@ -36,6 +36,12 @@ _PRISON_XLSX_URL = "https://dam-api.bfs.admin.ch/hub/api/dam/assets/36199314/mas
 # "Komponenten der Entwicklung der staendigen Wohnbevoelkerung, 1861-2024".
 _POPULATION_COMPONENTS_CSV_URL = "https://dam-api.bfs.admin.ch/hub/api/dam/assets/36073931/master"
 
+# "Zerlegung der Wachstumsrate des BIP pro Kopf" (decomposition of GDP per capita growth).
+_GDP_GROWTH_CSV_URL = "https://dam-api.bfs.admin.ch/hub/api/dam/assets/36191843/master"
+
+# "Erwerbs- und Erwerbslosenquote nach Kanton" (economic activity and unemployment rate).
+_UNEMPLOYMENT_CSV_URL = "https://dam-api.bfs.admin.ch/hub/api/dam/assets/36347244/master"
+
 
 def _fetch_csv_rows(url: str) -> list[dict[str, str]]:
     with httpx.Client(timeout=30.0, headers=_HEADERS, follow_redirects=True) as client:
@@ -117,4 +123,38 @@ def fetch_net_migration() -> list[RawObservation]:
         observations.append(
             RawObservation(date=dt.date(int(row["YEAR"]), 1, 1), value=float(row["VALUE"]))
         )
+    return observations
+
+
+def fetch_gdp_growth() -> list[RawObservation]:
+    """Real GDP per capita growth, annual, from BFS's growth decomposition series."""
+    rows = _fetch_csv_rows(_GDP_GROWTH_CSV_URL)
+    observations: list[RawObservation] = []
+    for row in rows:
+        if row["INDICATOR"] != "GDP per capita at previous year's prices":
+            continue
+        observations.append(
+            RawObservation(date=dt.date(int(row["PERIOD"]), 1, 1), value=float(row["VALUE"]))
+        )
+    return observations
+
+
+def fetch_unemployment_rate() -> list[RawObservation]:
+    """Unemployment rate, national (ILO/SAKE definition), annual.
+
+    Filters the cantonal-breakdown CSV to GEO "CH" (national aggregate),
+    ERWL "1" (unemployed) as a percentage of the working-age population.
+    """
+    rows = _fetch_csv_rows(_UNEMPLOYMENT_CSV_URL)
+    observations: list[RawObservation] = []
+    for row in rows:
+        if (
+            row["GEO"] != "CH"
+            or row["ERWP"] != "Total"
+            or row["ERWL"] != "1"
+            or row["UNIT_MEA"] != "pers in %"
+        ):
+            continue
+        year = int(row["TIME_PERIOD"].strip('"'))
+        observations.append(RawObservation(date=dt.date(year, 1, 1), value=float(row["OBS_VALUE"])))
     return observations

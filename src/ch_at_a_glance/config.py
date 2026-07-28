@@ -8,7 +8,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Literal
 
-from ch_at_a_glance.collectors import bfs, snb
+from ch_at_a_glance.collectors import bfs, efv, snb
 from ch_at_a_glance.collectors.base import Collector
 
 Direction = Literal["good", "bad", "neutral"]
@@ -94,5 +94,32 @@ INDICATOR_REGISTRY: list[IndicatorDefinition] = [
         direction="neutral",
         note="Net migration (immigration minus emigration), annual (BFS population statistics)",
         collector=bfs.fetch_net_migration,
+    ),
+    IndicatorDefinition(
+        slug="gdp-growth",
+        label="Real GDP per capita growth",
+        category="Economy",
+        unit="%",
+        direction="good",
+        note="Real GDP per capita, change on previous year (BFS growth decomposition series)",
+        collector=bfs.fetch_gdp_growth,
+    ),
+    IndicatorDefinition(
+        slug="unemployment-rate",
+        label="Unemployment rate",
+        category="Economy",
+        unit="%",
+        direction="bad",
+        note="Unemployment rate, ILO/SAKE definition, national, annual (BFS labour force survey)",
+        collector=bfs.fetch_unemployment_rate,
+    ),
+    IndicatorDefinition(
+        slug="gross-debt-ratio",
+        label="Federal gross debt ratio",
+        category="Government",
+        unit="%",
+        direction="bad",
+        note="Federal gross debt as a share of GDP, annual (Federal Finance Administration, EFV)",
+        collector=efv.fetch_gross_debt_ratio,
     ),
 ]
