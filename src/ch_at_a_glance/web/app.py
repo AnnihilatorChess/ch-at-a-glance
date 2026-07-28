@@ -15,7 +15,7 @@ from sqlalchemy import select
 from ch_at_a_glance.db import session_scope
 from ch_at_a_glance.derive import IndicatorSnapshot, snapshot
 from ch_at_a_glance.models import Indicator
-from ch_at_a_glance.web.charts import sparkline_svg
+from ch_at_a_glance.web.render import build_cards
 
 app = FastAPI(title="ch-at-a-glance (dev)")
 templates = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
@@ -38,7 +38,5 @@ def api_indicators() -> list[dict[str, object]]:
 
 @app.get("/", response_class=HTMLResponse)
 def index(request: Request) -> HTMLResponse:
-    cards = [
-        {**asdict(s), "sparkline": sparkline_svg([v for _, v in s.data])} for s in _all_snapshots()
-    ]
+    cards = build_cards(_all_snapshots())
     return templates.TemplateResponse(request, "index.html", {"cards": cards})

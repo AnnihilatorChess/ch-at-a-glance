@@ -12,14 +12,25 @@ from rich.table import Table
 from sqlalchemy import select
 
 from ch_at_a_glance.db import session_scope
-from ch_at_a_glance.derive import snapshot
+from ch_at_a_glance.derive import IndicatorSnapshot, snapshot
 from ch_at_a_glance.models import Indicator
 from ch_at_a_glance.pipeline import run_update
+from ch_at_a_glance.web.render import render_index_html
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 
 app = typer.Typer(help="Switzerland at a glance: data pipeline and dashboard")
 console = Console()
+
+
+def _all_snapshots() -> list[IndicatorSnapshot]:
+    with session_scope() as session:
+        indicators = (
+            session.execute(select(Indicator).order_by(Indicator.category, Indicator.label))
+            .scalars()
+            .all()
+        )
+        return [snapshot(ind) for ind in indicators]
 
 
 @app.command()
@@ -35,13 +46,7 @@ def update() -> None:
 @app.command()
 def export(output: Path = Path("data/snapshot.json")) -> None:
     """Write a static JSON snapshot of all indicators (Times-style artifact)."""
-    with session_scope() as session:
-        indicators = (
-            session.execute(select(Indicator).order_by(Indicator.category, Indicator.label))
-            .scalars()
-            .all()
-        )
-        snapshots = [snapshot(ind) for ind in indicators]
+    snapshots = _all_snapshots()
 
     payload = [
         {
@@ -64,6 +69,15 @@ def export(output: Path = Path("data/snapshot.json")) -> None:
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(payload, indent=2))
     console.print(f"Wrote {len(payload)} indicator(s) to {output}")
+
+
+@app.command(name="render-static")
+def render_static(output: Path = Path("docs/index.html")) -> None:
+    """Render a static HTML page (no server needed) for GitHub Pages."""
+    html = render_index_html(_all_snapshots())
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(html, encoding="utf-8")
+    console.print(f"Wrote static site to {output}")
 
 
 @app.command()

@@ -36,11 +36,12 @@ jobs:
           uv run alembic upgrade head
           uv run ch-dashboard update
           uv run ch-dashboard export
+          uv run ch-dashboard render-static
 
-      - name: Commit snapshot if it changed
+      - name: Commit snapshot and static site if they changed
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/snapshot.json
+          git add data/snapshot.json docs/index.html
           git diff --staged --quiet || git commit -m "Update indicator snapshot"
           git push
