@@ -4,9 +4,18 @@ BFS's PxWeb API endpoint exists but its query endpoints reject every standard
 PxWeb request pattern we tried (see docs/DESIGN.md), likely broken or
 non-standard on their side. The reliable path is opendata.swiss (CKAN) asset
 downloads, which BFS publishes as versioned XLS/CSV snapshots rather than a
-live feed. That means these collectors can lag the current STAT-TAB figures;
-worth revisiting if BFS ever exposes a working query API. A browser-like
-User-Agent is required on every request here, opendata.swiss 403s without one.
+live feed. A browser-like User-Agent is required on every request here,
+opendata.swiss 403s without one.
+
+Each numeric dam-api asset ID is a permanently frozen document: confirmed by
+finding two real cases (CPI, life expectancy) where BFS published a new
+edition under a brand-new numeric ID and left the old one abandoned forever
+at its original content, rather than updating it in place. BFS does maintain
+one genuinely stable pointer though -- each STAT-TAB/PX-table has a permalink
+code (e.g. "je-d-01.04.02.03.01") whose landing page keeps linking to
+whichever numeric asset is current. `_resolve_asset_url` resolves through
+that code every run, so these collectors survive BFS republishing instead of
+silently going stale like the original CPI source did.
 """
 
 from __future__ import annotations
@@ -45,31 +54,45 @@ _GERMAN_MONTHS = {
 }
 
 # "Schweizerischer Lohnindex, Index und Veraenderung, Basis 2015=100, NOGA08".
-_WAGE_INDEX_CSV_URL = "https://dam-api.bfs.admin.ch/hub/api/dam/assets/36506630/master"
+_WAGE_INDEX_CODE = "ts-x-03.04.03.00.05"
 
 # "Straf- und Massnahmenvollzug: Einweisungen, mittlerer Bestand, Aufenthaltstage".
-_PRISON_XLSX_URL = "https://dam-api.bfs.admin.ch/hub/api/dam/assets/36199314/master"
+_PRISON_CODE = "je-d-19.04.02.02"
 
 # "Komponenten der Entwicklung der staendigen Wohnbevoelkerung, 1861-2024".
-_POPULATION_COMPONENTS_CSV_URL = "https://dam-api.bfs.admin.ch/hub/api/dam/assets/36073931/master"
+_POPULATION_COMPONENTS_CODE = "ts-x-01.02.04.05-a"
 
 # "Zerlegung der Wachstumsrate des BIP pro Kopf" (decomposition of GDP per capita growth).
-_GDP_GROWTH_CSV_URL = "https://dam-api.bfs.admin.ch/hub/api/dam/assets/36191843/master"
+_GDP_GROWTH_CODE = "ts-x-04.02.01.06"
 
 # "Erwerbs- und Erwerbslosenquote nach Kanton" (economic activity and unemployment rate).
-_UNEMPLOYMENT_CSV_URL = "https://dam-api.bfs.admin.ch/hub/api/dam/assets/36347244/master"
+_UNEMPLOYMENT_CODE = "ts-x-40.02.03.02.03"
 
 # "Offene Stellen nach Grossregion" (job vacancies by major region), PC-Axis format.
-_JOB_VACANCIES_PX_URL = "https://dam-api.bfs.admin.ch/hub/api/dam/assets/36583816/master"
+_JOB_VACANCIES_CODE = "px-x-0602000000_104"
 
 # "Krankenhaeuser: Betten und Hospitalisierungen nach Aktivitaetstyp und Kanton".
-_HOSPITAL_BEDS_XLSX_URL = "https://dam-api.bfs.admin.ch/hub/api/dam/assets/28625193/master"
+_HOSPITAL_BEDS_CODE = "je-d-14.04.01.02"
 
-# "Lebenserwartung, 2000-2024" (life expectancy at birth, by sex).
-_LIFE_EXPECTANCY_XLSX_URL = "https://dam-api.bfs.admin.ch/hub/api/dam/assets/36142087/master"
+# "Lebenserwartung" (life expectancy at birth, by sex).
+_LIFE_EXPECTANCY_CODE = "je-d-01.04.02.03.01"
 
 # "Treibhausgasemissionen nach Verursachergruppen" (greenhouse gas emissions by source sector).
-_CO2_EMISSIONS_XLSX_URL = "https://dam-api.bfs.admin.ch/hub/api/dam/assets/36181929/master"
+_CO2_EMISSIONS_CODE = "je-d-02.03.02.03"
+
+_ASSET_LINK_PATTERN = re.compile(r"dam-api\.bfs\.admin\.ch/hub/api/dam/assets/(\d+)")
+
+
+def _resolve_asset_url(code: str) -> str:
+    """Resolve a BFS permalink code to whatever numeric dam-api asset
+    currently backs it (see module docstring for why this indirection
+    exists instead of a hardcoded asset URL)."""
+    with httpx.Client(timeout=30.0, headers=_HEADERS, follow_redirects=True) as client:
+        response = fetch_with_retry(client, "GET", f"https://www.bfs.admin.ch/asset/de/{code}")
+    match = _ASSET_LINK_PATTERN.search(response.text)
+    if match is None:
+        raise ValueError(f"Could not resolve a current dam-api asset for BFS code {code!r}")
+    return f"https://dam-api.bfs.admin.ch/hub/api/dam/assets/{match.group(1)}/master"
 
 
 def _fetch_csv_rows(url: str) -> list[dict[str, str]]:
@@ -79,9 +102,13 @@ def _fetch_csv_rows(url: str) -> list[dict[str, str]]:
     return list(csv.DictReader(StringIO(text)))
 
 
-def _fetch_workbook(url: str) -> openpyxl.Workbook:
+def _fetch_csv_rows_by_code(code: str) -> list[dict[str, str]]:
+    return _fetch_csv_rows(_resolve_asset_url(code))
+
+
+def _fetch_workbook_by_code(code: str) -> openpyxl.Workbook:
     with httpx.Client(timeout=30.0, headers=_HEADERS, follow_redirects=True) as client:
-        response = fetch_with_retry(client, "GET", url)
+        response = fetch_with_retry(client, "GET", _resolve_asset_url(code))
     return openpyxl.load_workbook(BytesIO(response.content), data_only=True)
 
 
@@ -119,7 +146,7 @@ def fetch_real_wages() -> list[RawObservation]:
     Filters the CSV to SECTION "B-S" (all NOGA sections, i.e. whole economy),
     SEX "T" (total), WAGE_TYPE "R" (real, as opposed to "N" nominal).
     """
-    rows = _fetch_csv_rows(_WAGE_INDEX_CSV_URL)
+    rows = _fetch_csv_rows_by_code(_WAGE_INDEX_CODE)
     observations: list[RawObservation] = []
     for row in rows:
         if row["SECTION"] != "B-S" or row["SEX"] != "T" or row["WAGE_TYPE"] != "R":
@@ -136,7 +163,7 @@ def fetch_prison_population() -> list[RawObservation]:
     Source sheet `DATA`: one row per year, column index 2 is the average
     population; the first three rows are titles/headers, not data.
     """
-    workbook = _fetch_workbook(_PRISON_XLSX_URL)
+    workbook = _fetch_workbook_by_code(_PRISON_CODE)
     sheet = workbook["DATA"]
     observations: list[RawObservation] = []
     for row in sheet.iter_rows(values_only=True):
@@ -148,7 +175,7 @@ def fetch_prison_population() -> list[RawObservation]:
 
 def fetch_net_migration() -> list[RawObservation]:
     """Net migration, annual, from BFS's population change components series."""
-    rows = _fetch_csv_rows(_POPULATION_COMPONENTS_CSV_URL)
+    rows = _fetch_csv_rows_by_code(_POPULATION_COMPONENTS_CODE)
     observations: list[RawObservation] = []
     for row in rows:
         if row["POPULATION_CHANGE_COMPONENT"] != "NMIG":
@@ -161,7 +188,7 @@ def fetch_net_migration() -> list[RawObservation]:
 
 def fetch_gdp_growth() -> list[RawObservation]:
     """Real GDP per capita growth, annual, from BFS's growth decomposition series."""
-    rows = _fetch_csv_rows(_GDP_GROWTH_CSV_URL)
+    rows = _fetch_csv_rows_by_code(_GDP_GROWTH_CODE)
     observations: list[RawObservation] = []
     for row in rows:
         if row["INDICATOR"] != "GDP per capita at previous year's prices":
@@ -178,7 +205,7 @@ def fetch_unemployment_rate() -> list[RawObservation]:
     Filters the cantonal-breakdown CSV to GEO "CH" (national aggregate),
     ERWL "1" (unemployed) as a percentage of the working-age population.
     """
-    rows = _fetch_csv_rows(_UNEMPLOYMENT_CSV_URL)
+    rows = _fetch_csv_rows_by_code(_UNEMPLOYMENT_CODE)
     observations: list[RawObservation] = []
     for row in rows:
         if (
@@ -210,7 +237,7 @@ def fetch_job_vacancies() -> list[RawObservation]:
     "Offene Stellen - Total" for "Schweiz" -- the national count.
     """
     with httpx.Client(timeout=30.0, headers=_HEADERS, follow_redirects=True) as client:
-        response = fetch_with_retry(client, "GET", _JOB_VACANCIES_PX_URL)
+        response = fetch_with_retry(client, "GET", _resolve_asset_url(_JOB_VACANCIES_CODE))
     text = response.content.decode("iso-8859-15")
 
     quarters = _px_quoted_list(text, 'VALUES("Quartal")=')
@@ -237,7 +264,7 @@ def fetch_hospital_beds() -> list[RawObservation]:
     figure; column offsets are stable across sheets even though header
     labels vary slightly year to year.
     """
-    workbook = _fetch_workbook(_HOSPITAL_BEDS_XLSX_URL)
+    workbook = _fetch_workbook_by_code(_HOSPITAL_BEDS_CODE)
     observations: list[RawObservation] = []
     for sheet_name in workbook.sheetnames:
         if not sheet_name.isdigit():
@@ -265,7 +292,7 @@ def fetch_life_expectancy() -> list[RawObservation]:
     to tell the two blocks apart; national figure is the simple average of
     the two, not population-weighted.
     """
-    workbook = _fetch_workbook(_LIFE_EXPECTANCY_XLSX_URL)
+    workbook = _fetch_workbook_by_code(_LIFE_EXPECTANCY_CODE)
     sheet = workbook[workbook.sheetnames[0]]
     rows = list(sheet.iter_rows(values_only=True))
     sex_row, year_row = rows[4], rows[5]
@@ -297,7 +324,7 @@ def fetch_co2_emissions() -> list[RawObservation]:
     There is no precomputed grand-total row, so this sums the CO2-equivalent
     column across every sector for each year.
     """
-    workbook = _fetch_workbook(_CO2_EMISSIONS_XLSX_URL)
+    workbook = _fetch_workbook_by_code(_CO2_EMISSIONS_CODE)
     sheet = workbook[workbook.sheetnames[0]]
     totals: dict[int, float] = {}
     for row in sheet.iter_rows(values_only=True):

@@ -74,7 +74,7 @@ INDICATOR_REGISTRY: list[IndicatorDefinition] = [
         unit=" index",
         direction="good",
         note="Real (inflation-adjusted) wage index for the whole economy, annual.",
-        source_url="https://www.bfs.admin.ch/asset/de/36506630",
+        source_url="https://www.bfs.admin.ch/asset/de/ts-x-03.04.03.00.05",
         collector=bfs.fetch_real_wages,
     ),
     IndicatorDefinition(
@@ -84,7 +84,7 @@ INDICATOR_REGISTRY: list[IndicatorDefinition] = [
         unit="",
         direction="neutral",
         note="Average daily prison population, annual.",
-        source_url="https://www.bfs.admin.ch/asset/de/36199314",
+        source_url="https://www.bfs.admin.ch/asset/de/je-d-19.04.02.02",
         collector=bfs.fetch_prison_population,
     ),
     IndicatorDefinition(
@@ -94,7 +94,7 @@ INDICATOR_REGISTRY: list[IndicatorDefinition] = [
         unit="",
         direction="neutral",
         note="Net migration, immigration minus emigration, annual.",
-        source_url="https://www.bfs.admin.ch/asset/de/36073931",
+        source_url="https://www.bfs.admin.ch/asset/de/ts-x-01.02.04.05-a",
         collector=bfs.fetch_net_migration,
     ),
     IndicatorDefinition(
@@ -104,7 +104,7 @@ INDICATOR_REGISTRY: list[IndicatorDefinition] = [
         unit="%",
         direction="good",
         note="Real GDP per capita, change on the previous year.",
-        source_url="https://www.bfs.admin.ch/asset/de/36191843",
+        source_url="https://www.bfs.admin.ch/asset/de/ts-x-04.02.01.06",
         collector=bfs.fetch_gdp_growth,
     ),
     IndicatorDefinition(
@@ -114,7 +114,7 @@ INDICATOR_REGISTRY: list[IndicatorDefinition] = [
         unit="%",
         direction="bad",
         note="Unemployment rate under the ILO/SAKE definition, national, annual.",
-        source_url="https://www.bfs.admin.ch/asset/de/36347244",
+        source_url="https://www.bfs.admin.ch/asset/de/ts-x-40.02.03.02.03",
         collector=bfs.fetch_unemployment_rate,
     ),
     IndicatorDefinition(
@@ -134,7 +134,7 @@ INDICATOR_REGISTRY: list[IndicatorDefinition] = [
         unit="",
         direction="good",
         note="Open job vacancies nationwide, quarterly.",
-        source_url="https://www.bfs.admin.ch/asset/de/36583816",
+        source_url="https://www.bfs.admin.ch/asset/de/px-x-0602000000_104",
         collector=bfs.fetch_job_vacancies,
     ),
     IndicatorDefinition(
@@ -144,7 +144,7 @@ INDICATOR_REGISTRY: list[IndicatorDefinition] = [
         unit="",
         direction="neutral",
         note="Total hospital bed capacity nationwide, annual.",
-        source_url="https://www.bfs.admin.ch/asset/de/28625193",
+        source_url="https://www.bfs.admin.ch/asset/de/je-d-14.04.01.02",
         collector=bfs.fetch_hospital_beds,
     ),
     IndicatorDefinition(
@@ -180,7 +180,7 @@ INDICATOR_REGISTRY: list[IndicatorDefinition] = [
         unit=" years",
         direction="good",
         note="Life expectancy at birth, averaged across men and women, annual.",
-        source_url="https://www.bfs.admin.ch/asset/de/36142087",
+        source_url="https://www.bfs.admin.ch/asset/de/je-d-01.04.02.03.01",
         collector=bfs.fetch_life_expectancy,
     ),
     IndicatorDefinition(
@@ -190,7 +190,7 @@ INDICATOR_REGISTRY: list[IndicatorDefinition] = [
         unit=" Mt CO2-eq",
         direction="bad",
         note="Total greenhouse gas emissions across all sectors, CO2-equivalent, annual.",
-        source_url="https://www.bfs.admin.ch/asset/de/36181929",
+        source_url="https://www.bfs.admin.ch/asset/de/je-d-02.03.02.03",
         collector=bfs.fetch_co2_emissions,
     ),
     IndicatorDefinition(

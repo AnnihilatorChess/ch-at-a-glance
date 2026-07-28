@@ -1,19 +1,21 @@
 from io import BytesIO
 
 import openpyxl
+import pytest
 import respx
 from httpx import Response
 
 from ch_at_a_glance.collectors.bfs import (
-    _CO2_EMISSIONS_XLSX_URL,
+    _CO2_EMISSIONS_CODE,
     _CPI_INDEX_CSV_URL,
-    _GDP_GROWTH_CSV_URL,
-    _HOSPITAL_BEDS_XLSX_URL,
-    _JOB_VACANCIES_PX_URL,
-    _LIFE_EXPECTANCY_XLSX_URL,
-    _POPULATION_COMPONENTS_CSV_URL,
-    _UNEMPLOYMENT_CSV_URL,
-    _WAGE_INDEX_CSV_URL,
+    _GDP_GROWTH_CODE,
+    _HOSPITAL_BEDS_CODE,
+    _JOB_VACANCIES_CODE,
+    _LIFE_EXPECTANCY_CODE,
+    _POPULATION_COMPONENTS_CODE,
+    _UNEMPLOYMENT_CODE,
+    _WAGE_INDEX_CODE,
+    _resolve_asset_url,
     fetch_co2_emissions,
     fetch_cpi_inflation,
     fetch_gdp_growth,
@@ -24,6 +26,22 @@ from ch_at_a_glance.collectors.bfs import (
     fetch_real_wages,
     fetch_unemployment_rate,
 )
+
+
+def _mock_resolved_asset(code: str, asset_id: str, content: bytes) -> None:
+    """Mock both hops of the two-step resolution: the stable code's landing
+    page (which is scraped for whichever numeric asset it currently points
+    to) and that asset's actual data."""
+    respx.get(f"https://www.bfs.admin.ch/asset/de/{code}").mock(
+        return_value=Response(
+            200,
+            text=f'<a href="https://dam-api.bfs.admin.ch/hub/api/dam/assets/{asset_id}/master">x</a>',
+        )
+    )
+    respx.get(f"https://dam-api.bfs.admin.ch/hub/api/dam/assets/{asset_id}/master").mock(
+        return_value=Response(200, content=content)
+    )
+
 
 _WAGE_CSV = (
     '"YEAR","SECTION","DIVISION","SEX","WAGE_TYPE","VALUE","VALUE_P","OBS_STATUS_VALUE"\n'
@@ -57,8 +75,33 @@ _UNEMPLOYMENT_CSV = (
 
 
 @respx.mock
+def test_resolve_asset_url_extracts_current_asset_from_code_page() -> None:
+    respx.get("https://www.bfs.admin.ch/asset/de/some-code").mock(
+        return_value=Response(
+            200,
+            text='<a href="https://dam-api.bfs.admin.ch/hub/api/dam/assets/999/master">x</a>',
+        )
+    )
+
+    assert (
+        _resolve_asset_url("some-code")
+        == "https://dam-api.bfs.admin.ch/hub/api/dam/assets/999/master"
+    )
+
+
+@respx.mock
+def test_resolve_asset_url_raises_when_code_page_has_no_asset_link() -> None:
+    respx.get("https://www.bfs.admin.ch/asset/de/dead-code").mock(
+        return_value=Response(200, text="<p>Not found</p>")
+    )
+
+    with pytest.raises(ValueError, match="dead-code"):
+        _resolve_asset_url("dead-code")
+
+
+@respx.mock
 def test_fetch_real_wages_filters_to_whole_economy_real_series() -> None:
-    respx.get(_WAGE_INDEX_CSV_URL).mock(return_value=Response(200, content=_WAGE_CSV.encode()))
+    _mock_resolved_asset(_WAGE_INDEX_CODE, "111", _WAGE_CSV.encode())
 
     observations = fetch_real_wages()
 
@@ -70,9 +113,7 @@ def test_fetch_real_wages_filters_to_whole_economy_real_series() -> None:
 
 @respx.mock
 def test_fetch_net_migration_filters_to_nmig_component() -> None:
-    respx.get(_POPULATION_COMPONENTS_CSV_URL).mock(
-        return_value=Response(200, content=_MIGRATION_CSV.encode())
-    )
+    _mock_resolved_asset(_POPULATION_COMPONENTS_CODE, "222", _MIGRATION_CSV.encode())
 
     observations = fetch_net_migration()
 
@@ -83,7 +124,7 @@ def test_fetch_net_migration_filters_to_nmig_component() -> None:
 
 @respx.mock
 def test_fetch_gdp_growth_filters_to_gdp_per_capita_indicator() -> None:
-    respx.get(_GDP_GROWTH_CSV_URL).mock(return_value=Response(200, content=_GDP_CSV.encode()))
+    _mock_resolved_asset(_GDP_GROWTH_CODE, "333", _GDP_CSV.encode())
 
     observations = fetch_gdp_growth()
 
@@ -95,9 +136,7 @@ def test_fetch_gdp_growth_filters_to_gdp_per_capita_indicator() -> None:
 
 @respx.mock
 def test_fetch_unemployment_rate_filters_to_national_percentage_series() -> None:
-    respx.get(_UNEMPLOYMENT_CSV_URL).mock(
-        return_value=Response(200, content=_UNEMPLOYMENT_CSV.encode())
-    )
+    _mock_resolved_asset(_UNEMPLOYMENT_CODE, "444", _UNEMPLOYMENT_CSV.encode())
 
     observations = fetch_unemployment_rate()
 
@@ -144,9 +183,7 @@ _JOB_VACANCIES_PX = (
 
 @respx.mock
 def test_fetch_job_vacancies_reads_first_data_row_as_national_total() -> None:
-    respx.get(_JOB_VACANCIES_PX_URL).mock(
-        return_value=Response(200, content=_JOB_VACANCIES_PX.encode("iso-8859-15"))
-    )
+    _mock_resolved_asset(_JOB_VACANCIES_CODE, "555", _JOB_VACANCIES_PX.encode("iso-8859-15"))
 
     observations = fetch_job_vacancies()
 
@@ -170,7 +207,7 @@ def test_fetch_hospital_beds_reads_total_row_per_year_sheet() -> None:
     buffer = BytesIO()
     workbook.save(buffer)
 
-    respx.get(_HOSPITAL_BEDS_XLSX_URL).mock(return_value=Response(200, content=buffer.getvalue()))
+    _mock_resolved_asset(_HOSPITAL_BEDS_CODE, "666", buffer.getvalue())
 
     observations = fetch_hospital_beds()
 
@@ -195,7 +232,7 @@ def test_fetch_life_expectancy_averages_men_and_women_by_year() -> None:
     buffer = BytesIO()
     workbook.save(buffer)
 
-    respx.get(_LIFE_EXPECTANCY_XLSX_URL).mock(return_value=Response(200, content=buffer.getvalue()))
+    _mock_resolved_asset(_LIFE_EXPECTANCY_CODE, "777", buffer.getvalue())
 
     observations = fetch_life_expectancy()
 
@@ -219,7 +256,7 @@ def test_fetch_co2_emissions_sums_across_sector_blocks_per_year() -> None:
     buffer = BytesIO()
     workbook.save(buffer)
 
-    respx.get(_CO2_EMISSIONS_XLSX_URL).mock(return_value=Response(200, content=buffer.getvalue()))
+    _mock_resolved_asset(_CO2_EMISSIONS_CODE, "888", buffer.getvalue())
 
     observations = fetch_co2_emissions()
 
