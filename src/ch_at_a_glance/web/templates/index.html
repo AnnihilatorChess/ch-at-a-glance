@@ -2,49 +2,160 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>ch-at-a-glance (dev)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ch-at-a-glance</title>
 <style>
-  :root { color-scheme: light dark; }
-  body { font-family: system-ui, sans-serif; margin: 2rem; max-width: 1100px; }
-  h1 { font-size: 1.25rem; margin-bottom: 0.25rem; }
-  p.sub { color: #888; margin-top: 0; margin-bottom: 1.5rem; font-size: 0.9rem; }
-  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem; }
-  .card { border: 1px solid #4443; border-radius: 8px; padding: 1rem; }
+  :root {
+    color-scheme: light dark;
+    --green: #22c55e;
+    --red: #ef4444;
+    --grey: #9ca3af;
+    --bg: #fafafa;
+    --card-bg: #ffffff;
+    --border: #e5e7eb;
+    --text: #111827;
+    --muted: #6b7280;
+    --shadow: 0 1px 2px rgba(16, 24, 40, 0.04), 0 1px 3px rgba(16, 24, 40, 0.06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0b0d12;
+      --card-bg: #14171f;
+      --border: #272c38;
+      --text: #e5e7eb;
+      --muted: #8b93a3;
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    margin: 0;
+    padding: 2.5rem 1.5rem 3rem;
+  }
+  main { max-width: 1180px; margin: 0 auto; }
+  h1 {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 2.4rem;
+    font-weight: 700;
+    margin: 0 0 0.15rem;
+  }
+  p.subtitle { color: var(--muted); margin: 0 0 1.5rem; font-size: 1rem; }
+
+  .filters { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1.25rem; }
+  .filters input { position: absolute; opacity: 0; pointer-events: none; }
+  .filters label {
+    border: 1px solid var(--muted);
+    background: var(--card-bg);
+    color: var(--text);
+    border-radius: 999px;
+    padding: 0.4rem 1rem;
+    font-size: 0.85rem;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.1s, color 0.1s;
+  }
+  .filters input:checked + label { background: var(--text); color: var(--bg); border-color: var(--text); }
+  .filters input:focus-visible + label { outline: 2px solid var(--muted); outline-offset: 2px; }
+
+  .summary { font-size: 1.05rem; margin: 0 0 1.5rem; color: var(--text); }
+  .summary .dot { display: inline-block; width: 0.55em; height: 0.55em; border-radius: 50%; margin-right: 0.4em; }
+  .summary .dot.green { background: var(--green); } .summary .dot.red { background: var(--red); }
+  .summary .count { font-weight: 700; }
+  .summary .count.green { color: var(--green); }
+  .summary .count.red { color: var(--red); }
+  .summary .sep { color: var(--border); margin: 0 0.7em; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1.1rem; }
+  .card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.15rem 1.25rem 1rem;
+    box-shadow: var(--shadow);
+  }
+  .category { color: var(--muted); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; }
+
+  .label-row { display: flex; align-items: center; gap: 0.35rem; margin-top: 0.15rem; }
   .label { font-weight: 600; font-size: 0.95rem; }
-  .category { color: #888; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.03em; }
-  .now { font-size: 1.6rem; font-weight: 700; margin: 0.4rem 0 0.2rem; }
-  .change { font-size: 0.85rem; }
-  .dot { display: inline-block; width: 0.6em; height: 0.6em; border-radius: 50%; margin-right: 0.35em; }
-  .green { background: #22c55e; } .red { background: #ef4444; } .grey { background: #9ca3af; }
-  .note { color: #888; font-size: 0.75rem; margin-top: 0.5rem; }
-  .empty { color: #ef4444; font-size: 0.85rem; }
+
+  .info { position: relative; display: inline-flex; align-items: center; justify-content: center;
+    width: 1.05em; height: 1.05em; border-radius: 50%; border: 1px solid var(--muted);
+    color: var(--muted); font-size: 0.65rem; line-height: 1; cursor: help; flex-shrink: 0; }
+  .info .tooltip {
+    visibility: hidden; opacity: 0; position: absolute; bottom: 135%; left: 50%;
+    transform: translateX(-50%); background: var(--text); color: var(--bg);
+    padding: 0.55rem 0.7rem; border-radius: 8px; font-size: 0.75rem; font-weight: 400;
+    width: 220px; line-height: 1.35; text-align: left; z-index: 5; transition: opacity 0.12s;
+  }
+  .info:hover .tooltip, .info:focus .tooltip, .info:focus-visible .tooltip { visibility: visible; opacity: 1; }
+
+  .now { font-size: 1.7rem; font-weight: 700; margin: 0.35rem 0 0.15rem; color: var(--grey); white-space: nowrap; }
+  .now.green { color: var(--green); } .now.red { color: var(--red); }
+  .change { font-size: 0.85rem; color: var(--grey); margin-bottom: 0.3rem; }
+  .change.green { color: var(--green); } .change.red { color: var(--red); }
+
+  .sparkline { color: var(--muted); width: 100%; height: auto; display: block; margin-top: 0.3rem; }
+  .empty { color: var(--muted); font-size: 0.85rem; padding: 1rem 0; }
+
+  footer { color: var(--muted); font-size: 0.8rem; margin-top: 2.5rem; }
 </style>
 </head>
 <body>
-<h1>ch-at-a-glance (dev)</h1>
-<p class="sub">Validation view over the raw pipeline output, not the real dashboard design. {{ cards|length }} indicator(s).</p>
-<div class="grid">
-{% for c in cards %}
-  <div class="card">
-    <div class="category">{{ c.category }}</div>
-    <div class="label">{{ c.label }}</div>
-    {% if c.now is not none %}
-      <div class="now">{{ "%.2f"|format(c.now) }}{{ c.unit }}</div>
-      <div class="change">
-        <span class="dot {{ c.colour['1y'] }}"></span>
-        {% if c.change['1y'] is not none %}
-          {{ "%+.2f"|format(c.change['1y']) }}{{ c.unit }} vs 1y ago
-        {% else %}
-          no 1y comparison yet
-        {% endif %}
-      </div>
-      {{ c.sparkline|safe }}
-    {% else %}
-      <div class="empty">no data yet</div>
-    {% endif %}
-    <div class="note">{{ c.note }}</div>
+<main>
+  <h1>ch-at-a-glance</h1>
+  <p class="subtitle">Switzerland at a glance &mdash; change in the past 1 year</p>
+
+  {% set categories = cards|map(attribute='category')|unique|sort %}
+  <div class="filters">
+    <input type="radio" name="cat" id="cat-all" checked>
+    <label for="cat-all">All</label>
+    {% for cat in categories %}
+    <input type="radio" name="cat" id="cat-{{ loop.index }}">
+    <label for="cat-{{ loop.index }}">{{ cat }}</label>
+    {% endfor %}
   </div>
-{% endfor %}
-</div>
+
+  <p class="summary">
+    <span class="dot green"></span><span class="count green">{{ better }}</span> getting better
+    <span class="sep">&bull;</span>
+    <span class="dot red"></span><span class="count red">{{ worse }}</span> getting worse
+  </p>
+
+  <style>
+    {% for cat in categories %}
+    #cat-{{ loop.index }}:checked ~ .grid .card:not([data-category="{{ cat }}"]) { display: none; }
+    {% endfor %}
+  </style>
+
+  <div class="grid">
+  {% for c in cards %}
+    <div class="card" data-category="{{ c.category }}">
+      <div class="category">{{ c.category }}</div>
+      <div class="label-row">
+        <span class="label">{{ c.label }}</span>
+        <span class="info" tabindex="0">i<span class="tooltip">{{ c.note }}</span></span>
+      </div>
+      {% if c.now is not none %}
+        <div class="now {{ c.colour['1y'] }}">{{ c.now_display }}{{ c.unit }}</div>
+        <div class="change {{ c.colour['1y'] }}">
+          {% if c.change_display['1y'] is not none %}
+            {{ c.arrow['1y'] }} {{ c.change_display['1y'] }}{{ c.unit }} vs 1y ago
+          {% else %}
+            no 1y comparison yet
+          {% endif %}
+        </div>
+        {{ c.sparkline|safe }}
+      {% else %}
+        <div class="empty">no data yet</div>
+      {% endif %}
+    </div>
+  {% endfor %}
+  </div>
+
+  <footer>Validation-stage frontend over the raw pipeline output, not a pixel copy of the Times design. {{ cards|length }} indicator(s).</footer>
+</main>
 </body>
 </html>
