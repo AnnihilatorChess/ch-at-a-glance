@@ -13,6 +13,8 @@ wheels/
 data/*.db
 data/*.sqlite3
 data/*.json
+# ...except the exported snapshot, committed by the scheduled update workflow.
+!data/snapshot.json
 *.log
 
 # Editors

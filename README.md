@@ -22,3 +22,11 @@ uv run ch-dashboard update    # pull latest data for all registered indicators
 uv run ch-dashboard export    # write a static JSON snapshot (Times-style artifact)
 uv run ch-dashboard serve     # run the minimal FastAPI frontend
 ```
+
+## Scheduled updates
+
+[`.github/workflows/update-data.yml`](.github/workflows/update-data.yml) runs the pipeline daily (and on manual dispatch): rebuild the database from scratch, pull every indicator, export the snapshot, commit it if it changed. There's no cross-run state to persist -- every collector re-fetches its source's full history each time (not just deltas) and the pipeline dedupes by date, so starting from an empty database each run is simpler than caching a SQLite file in CI.
+
+Daily is a deliberate over-poll: source cadences range from daily (SNB rates) to annual (most BFS series), and a run that finds nothing new just logs "0 new" and exits -- see `pipeline.py`.
+
+`data/snapshot.json` is the one generated file tracked in git (everything else under `data/` is gitignored); it's the thing the workflow commits.

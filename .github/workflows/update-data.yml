@@ -1,0 +1,46 @@
+name: Update indicator data
+
+on:
+  schedule:
+    # Daily. Source cadences range from daily (SNB rates) to annual (most BFS
+    # series), so this is a deliberately cheap over-poll: a run that finds
+    # nothing new just logs "0 new" and exits, see pipeline.py.
+    - cron: "0 4 * * *"
+  workflow_dispatch: {}
+
+concurrency:
+  group: update-data
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - run: uv sync --locked
+
+      - name: Rebuild database and pull latest data
+        # Every collector already re-fetches its source's full history each
+        # run (not just deltas) and the pipeline dedupes by date, so there is
+        # no cross-run state to restore: start from an empty database each
+        # time rather than persisting the SQLite file in CI.
+        run: |
+          uv run alembic upgrade head
+          uv run ch-dashboard update
+          uv run ch-dashboard export
+
+      - name: Commit snapshot if it changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/snapshot.json
+          git diff --staged --quiet || git commit -m "Update indicator snapshot"
+          git push
