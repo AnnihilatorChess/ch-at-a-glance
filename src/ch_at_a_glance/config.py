@@ -44,7 +44,7 @@ INDICATOR_REGISTRY: list[IndicatorDefinition] = [
         unit="%",
         direction="bad",
         note="Consumer price index, change versus the same month a year earlier.",
-        source_url="https://data.zg.ch/store/1/resource/334",
+        source_url="https://opendata.swiss/en/dataset/landesindex-der-konsumentenpreise",
         collector=bfs.fetch_cpi_inflation,
     ),
     IndicatorDefinition(
@@ -54,7 +54,7 @@ INDICATOR_REGISTRY: list[IndicatorDefinition] = [
         unit="%",
         direction="bad",
         note="Yield on 10-year Swiss Confederation bond issues, monthly.",
-        source_url="https://data.snb.ch/api/cube/rendoblim/data/json/en",
+        source_url="https://data.snb.ch/en",
         collector=snb.fetch_10y_bond_yield,
     ),
     IndicatorDefinition(
@@ -64,7 +64,7 @@ INDICATOR_REGISTRY: list[IndicatorDefinition] = [
         unit="%",
         direction="bad",
         note="Swiss National Bank policy rate, updated daily.",
-        source_url="https://data.snb.ch/api/cube/snbgwdzid/data/json/en",
+        source_url="https://data.snb.ch/en",
         collector=snb.fetch_policy_rate,
     ),
     IndicatorDefinition(
@@ -74,7 +74,7 @@ INDICATOR_REGISTRY: list[IndicatorDefinition] = [
         unit=" index",
         direction="good",
         note="Real (inflation-adjusted) wage index for the whole economy, annual.",
-        source_url="https://dam-api.bfs.admin.ch/hub/api/dam/assets/36506630/master",
+        source_url="https://www.bfs.admin.ch/asset/de/36506630",
         collector=bfs.fetch_real_wages,
     ),
     IndicatorDefinition(
@@ -84,7 +84,7 @@ INDICATOR_REGISTRY: list[IndicatorDefinition] = [
         unit="",
         direction="neutral",
         note="Average daily prison population, annual.",
-        source_url="https://dam-api.bfs.admin.ch/hub/api/dam/assets/36199314/master",
+        source_url="https://www.bfs.admin.ch/asset/de/36199314",
         collector=bfs.fetch_prison_population,
     ),
     IndicatorDefinition(
@@ -94,7 +94,7 @@ INDICATOR_REGISTRY: list[IndicatorDefinition] = [
         unit="",
         direction="neutral",
         note="Net migration, immigration minus emigration, annual.",
-        source_url="https://dam-api.bfs.admin.ch/hub/api/dam/assets/36073931/master",
+        source_url="https://www.bfs.admin.ch/asset/de/36073931",
         collector=bfs.fetch_net_migration,
     ),
     IndicatorDefinition(
@@ -104,7 +104,7 @@ INDICATOR_REGISTRY: list[IndicatorDefinition] = [
         unit="%",
         direction="good",
         note="Real GDP per capita, change on the previous year.",
-        source_url="https://dam-api.bfs.admin.ch/hub/api/dam/assets/36191843/master",
+        source_url="https://www.bfs.admin.ch/asset/de/36191843",
         collector=bfs.fetch_gdp_growth,
     ),
     IndicatorDefinition(
@@ -114,7 +114,7 @@ INDICATOR_REGISTRY: list[IndicatorDefinition] = [
         unit="%",
         direction="bad",
         note="Unemployment rate under the ILO/SAKE definition, national, annual.",
-        source_url="https://dam-api.bfs.admin.ch/hub/api/dam/assets/36347244/master",
+        source_url="https://www.bfs.admin.ch/asset/de/36347244",
         collector=bfs.fetch_unemployment_rate,
     ),
     IndicatorDefinition(
@@ -124,7 +124,7 @@ INDICATOR_REGISTRY: list[IndicatorDefinition] = [
         unit="%",
         direction="bad",
         note="Federal gross debt as a share of GDP, annual.",
-        source_url="https://www.efv.admin.ch/dam/de/sd-web/m9aWXSnsRvNO/bundeshaushalt_de.csv",
+        source_url="https://www.efv.admin.ch/de/open-government-data-de",
         collector=efv.fetch_gross_debt_ratio,
     ),
     IndicatorDefinition(
@@ -134,7 +134,7 @@ INDICATOR_REGISTRY: list[IndicatorDefinition] = [
         unit="",
         direction="good",
         note="Open job vacancies nationwide, quarterly.",
-        source_url="https://dam-api.bfs.admin.ch/hub/api/dam/assets/36583816/master",
+        source_url="https://www.bfs.admin.ch/asset/de/36583816",
         collector=bfs.fetch_job_vacancies,
     ),
     IndicatorDefinition(
@@ -144,7 +144,7 @@ INDICATOR_REGISTRY: list[IndicatorDefinition] = [
         unit="",
         direction="neutral",
         note="Total hospital bed capacity nationwide, annual.",
-        source_url="https://dam-api.bfs.admin.ch/hub/api/dam/assets/28625193/master",
+        source_url="https://www.bfs.admin.ch/asset/de/28625193",
         collector=bfs.fetch_hospital_beds,
     ),
     IndicatorDefinition(
@@ -157,7 +157,7 @@ INDICATOR_REGISTRY: list[IndicatorDefinition] = [
             "Median sale price of single-family houses in canton Zurich, annual "
             "(no national house price index exists as open data)."
         ),
-        source_url="https://daten.statistik.zh.ch/ogd/daten/ressourcen/KTZH_00003158_00006781.csv",
+        source_url="https://opendata.swiss/en/dataset/immobilienpreise-im-kanton-zurich",
         collector=cantonal.fetch_house_prices_zurich,
     ),
     IndicatorDefinition(
@@ -170,7 +170,7 @@ INDICATOR_REGISTRY: list[IndicatorDefinition] = [
             "Median net rent for a 2-room apartment in canton Zug, quarterly "
             "(no national rent series exists as open data)."
         ),
-        source_url="https://data.zg.ch/store/1/resource/339",
+        source_url="https://opendata.swiss/en/dataset/nettomiete-fur-wohnungen-nach-zimmerzahl",
         collector=cantonal.fetch_rent_zug,
     ),
     IndicatorDefinition(
@@ -180,7 +180,7 @@ INDICATOR_REGISTRY: list[IndicatorDefinition] = [
         unit=" years",
         direction="good",
         note="Life expectancy at birth, averaged across men and women, annual.",
-        source_url="https://dam-api.bfs.admin.ch/hub/api/dam/assets/36142087/master",
+        source_url="https://www.bfs.admin.ch/asset/de/36142087",
         collector=bfs.fetch_life_expectancy,
     ),
     IndicatorDefinition(
@@ -190,7 +190,7 @@ INDICATOR_REGISTRY: list[IndicatorDefinition] = [
         unit=" Mt CO2-eq",
         direction="bad",
         note="Total greenhouse gas emissions across all sectors, CO2-equivalent, annual.",
-        source_url="https://dam-api.bfs.admin.ch/hub/api/dam/assets/36181929/master",
+        source_url="https://www.bfs.admin.ch/asset/de/36181929",
         collector=bfs.fetch_co2_emissions,
     ),
     IndicatorDefinition(
@@ -203,9 +203,7 @@ INDICATOR_REGISTRY: list[IndicatorDefinition] = [
             "Hydropower's share of net electricity production, annual "
             "(not a full renewable share)."
         ),
-        source_url=(
-            "https://www.uvek-gis.admin.ch/BFE/ogd/32/ogd32_elektrizitaetbilanz_jahreswerte.csv"
-        ),
+        source_url="https://opendata.swiss/en/dataset/schweizerische-elektrizitatsbilanz-jahreswerte",
         collector=bfe.fetch_hydropower_share,
     ),
 ]

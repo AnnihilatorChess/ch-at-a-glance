@@ -38,13 +38,32 @@ def test_recent_horizon_is_highlighted_in_indicator_colour() -> None:
     assert "#ef4444" in svg
 
 
-def test_sparse_series_still_gets_a_minimum_visible_highlight() -> None:
-    # A calendar-accurate cutoff would only catch the last of 20 yearly
-    # points here (too thin to see); the minimum-fraction floor should widen
-    # it to a legible segment regardless.
+def _highlight_point_count(svg: str) -> int:
+    # The highlight overlay is the second <polyline> (the first is the full
+    # base line drawn in currentColor).
+    polylines = svg.split('<polyline points="')[1:]
+    highlight_points_attr = polylines[1].split('"')[0]
+    return len(highlight_points_attr.split(" "))
+
+
+def test_sparse_series_gets_a_minimum_two_point_highlight() -> None:
+    # A calendar-accurate cutoff would only catch the very last of 20 yearly
+    # points here (a single dot can't draw a line); the floor should widen it
+    # to exactly the final interval, not further.
     data = [(date(2005 + i, 1, 1), float(i)) for i in range(20)]
     svg = sparkline_svg(data, colour="green", highlight_days=1)
     assert "#22c55e" in svg
+    assert _highlight_point_count(svg) == 2
+
+
+def test_long_annual_series_does_not_over_widen_the_highlight() -> None:
+    # Regression for a real bug: widening by a FRACTION of the whole series
+    # (e.g. 12% of 164 points spanning 1861-2024) highlighted a decade-plus
+    # for what should be a single year's change. The floor must stay fixed
+    # at 2 points regardless of how long the overall series is.
+    data = [(date(1861 + i, 1, 1), float(i)) for i in range(164)]
+    svg = sparkline_svg(data, colour="green", highlight_days=365)
+    assert _highlight_point_count(svg) == 2
 
 
 def test_year_labels_reflect_first_and_last_observation() -> None:

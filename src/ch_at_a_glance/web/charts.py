@@ -10,7 +10,6 @@ from __future__ import annotations
 from datetime import date, timedelta
 
 _COLOUR_HEX = {"green": "#22c55e", "red": "#ef4444", "grey": "#9ca3af"}
-_MIN_HIGHLIGHT_FRACTION = 0.12
 
 
 def sparkline_svg(
@@ -47,13 +46,14 @@ def sparkline_svg(
 
     cutoff = data[-1][0] - timedelta(days=highlight_days)
     calendar_start = next((i for i, (d, _) in enumerate(data) if d >= cutoff), len(data) - 1)
-    # A calendar-accurate cutoff can highlight only the last point or two for
-    # sparse (annual) series, which is too thin to read. Widen it to at least
-    # a fixed fraction of the chart so every card's highlight is legible,
-    # without shrinking a highlight that's already wider than that (dense
-    # series keep their accurate ~1-year proportion).
-    min_start = max(0, len(data) - max(2, round(len(data) * _MIN_HIGHLIGHT_FRACTION)))
-    highlight_start = min(calendar_start, min_start)
+    # Never highlight fewer than the final two points (one interval), so
+    # annual data still draws a visible line instead of a single dot with
+    # nothing to connect it to. This must stay a FIXED floor of 2, not a
+    # fraction of the series length: for a century-plus annual series,
+    # "fraction of all points" balloons into a decade-plus highlight for
+    # what is actually a single year's change, misrepresenting the data
+    # rather than just looking thin.
+    highlight_start = min(calendar_start, max(0, len(data) - 2))
     hex_colour = _COLOUR_HEX.get(colour, _COLOUR_HEX["grey"])
 
     highlight_svg = ""
