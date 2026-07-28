@@ -10,9 +10,9 @@ Python 3.12, uv, SQLAlchemy 2.0 + Alembic, SQLite (Postgres-ready), httpx, typer
 
 ## Status
 
-9 indicators live across Economy, Living Standards, Government, Crime, and Immigration: CPI inflation, GDP growth, unemployment rate, real wages, SNB policy rate, 10-year bond yield, federal gross debt ratio, prison population, net migration. Sources are BFS (via opendata.swiss CSV/XLS, its PxWeb API never worked), SNB's undocumented JSON API, and the EFV's federal budget CSV.
+13 indicators live across Economy, Living Standards, Government, Housing, Health, Crime, and Immigration: CPI inflation, GDP growth, unemployment rate, real wages, job vacancies, SNB policy rate, 10-year bond yield, federal gross debt ratio, prison population, net migration, hospital beds, and two cantonal proxies (house prices and 2-room rent, both canton-only since no national series exists). Sources are BFS (via opendata.swiss CSV/XLS, its PxWeb API never worked), a hand-rolled parser for one BFS PC-Axis file (job vacancies), SNB's undocumented JSON API, the EFV's federal budget CSV, and two cantonal open-data portals (Zurich, Zug).
 
-Still missing from the design doc's v1 list, no working structured data source found after a real attempt: house prices, housing starts, petrol price, job vacancies, PKS shoplifting, asylum applications. See `docs/DESIGN.md` for what was tried.
+Still missing, no working structured national data source found after a real attempt: housing starts, petrol/diesel/electricity price, PKS shoplifting and other crime-type breakdowns, asylum applications, SNB gold reserves/cash in circulation, national vehicle registrations, consumer confidence. See `docs/DESIGN.md` for what was tried.
 
 ## Usage
 

@@ -8,7 +8,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Literal
 
-from ch_at_a_glance.collectors import bfs, efv, snb
+from ch_at_a_glance.collectors import bfs, cantonal, efv, snb
 from ch_at_a_glance.collectors.base import Collector
 
 Direction = Literal["good", "bad", "neutral"]
@@ -121,5 +121,52 @@ INDICATOR_REGISTRY: list[IndicatorDefinition] = [
         direction="bad",
         note="Federal gross debt as a share of GDP, annual (Federal Finance Administration, EFV)",
         collector=efv.fetch_gross_debt_ratio,
+    ),
+    IndicatorDefinition(
+        slug="job-vacancies",
+        label="Job vacancies",
+        category="Economy",
+        unit="",
+        direction="good",
+        note=(
+            "Open job vacancies, national, quarterly (BFS job statistics BESTA, "
+            "published as a PC-Axis file only)"
+        ),
+        collector=bfs.fetch_job_vacancies,
+    ),
+    IndicatorDefinition(
+        slug="hospital-beds",
+        label="Hospital beds",
+        category="Health",
+        unit="",
+        direction="neutral",
+        note="Total hospital bed capacity, national, annual (BFS hospital statistics)",
+        collector=bfs.fetch_hospital_beds,
+    ),
+    IndicatorDefinition(
+        slug="house-prices-zurich",
+        label="House prices (Zurich)",
+        category="Housing",
+        unit=" CHF",
+        direction="bad",
+        note=(
+            "Median sale price of single-family houses, canton Zurich, annual. "
+            "No genuine national house price index exists as open data (BFS's own "
+            "is PDF-only), so this is a cantonal proxy, not a Swiss-wide figure."
+        ),
+        collector=cantonal.fetch_house_prices_zurich,
+    ),
+    IndicatorDefinition(
+        slug="rent-zug",
+        label="Renting a 2-room flat (Zug)",
+        category="Housing",
+        unit=" CHF/month",
+        direction="bad",
+        note=(
+            "Median net rent for a 2-room apartment, canton Zug, quarterly. "
+            "No national rent series exists as open data, so this is a cantonal "
+            "proxy, not a Swiss-wide figure."
+        ),
+        collector=cantonal.fetch_rent_zug,
     ),
 ]

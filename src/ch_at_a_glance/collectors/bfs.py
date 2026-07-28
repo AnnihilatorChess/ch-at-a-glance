@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import csv
 import datetime as dt
+import re
 from io import BytesIO, StringIO
 
 import httpx
@@ -41,6 +42,12 @@ _GDP_GROWTH_CSV_URL = "https://dam-api.bfs.admin.ch/hub/api/dam/assets/36191843/
 
 # "Erwerbs- und Erwerbslosenquote nach Kanton" (economic activity and unemployment rate).
 _UNEMPLOYMENT_CSV_URL = "https://dam-api.bfs.admin.ch/hub/api/dam/assets/36347244/master"
+
+# "Offene Stellen nach Grossregion" (job vacancies by major region), PC-Axis format.
+_JOB_VACANCIES_PX_URL = "https://dam-api.bfs.admin.ch/hub/api/dam/assets/36583816/master"
+
+# "Krankenhaeuser: Betten und Hospitalisierungen nach Aktivitaetstyp und Kanton".
+_HOSPITAL_BEDS_XLSX_URL = "https://dam-api.bfs.admin.ch/hub/api/dam/assets/28625193/master"
 
 
 def _fetch_csv_rows(url: str) -> list[dict[str, str]]:
@@ -157,4 +164,66 @@ def fetch_unemployment_rate() -> list[RawObservation]:
             continue
         year = int(row["TIME_PERIOD"].strip('"'))
         observations.append(RawObservation(date=dt.date(year, 1, 1), value=float(row["OBS_VALUE"])))
+    return observations
+
+
+def _px_quoted_list(text: str, marker: str) -> list[str]:
+    start = text.index(marker) + len(marker)
+    end = text.index(";", start)
+    return re.findall(r'"([^"]*)"', text[start:end])
+
+
+def fetch_job_vacancies() -> list[RawObservation]:
+    """Job vacancies, national ("Schweiz"), quarterly, raw count.
+
+    BFS only publishes this as a PC-Axis (.px) file, not CSV/XLS. Rather than
+    pull in a PC-Axis parsing library for one indicator, this reads the DATA
+    block directly: STUB declares ("Offene Stellen", "Grossregion") in that
+    order, so DATA rows are ordered measure-then-region with region cycling
+    fastest. The first row (117 quarterly values) is therefore
+    "Offene Stellen - Total" for "Schweiz" -- the national count.
+    """
+    with httpx.Client(timeout=30.0, headers=_HEADERS, follow_redirects=True) as client:
+        response = fetch_with_retry(client, "GET", _JOB_VACANCIES_PX_URL)
+    text = response.content.decode("iso-8859-15")
+
+    quarters = _px_quoted_list(text, 'VALUES("Quartal")=')
+    data_start = text.index("DATA=") + len("DATA=")
+    tokens = text[data_start:].strip().rstrip(";").split()
+    national_row = [token.strip('"') for token in tokens[: len(quarters)]]
+
+    observations: list[RawObservation] = []
+    for quarter, token in zip(quarters, national_row, strict=True):
+        if token == "...":
+            continue
+        year, q = int(quarter[:4]), int(quarter[5])
+        observations.append(
+            RawObservation(date=dt.date(year, (q - 1) * 3 + 1, 1), value=float(token))
+        )
+    return observations
+
+
+def fetch_hospital_beds() -> list[RawObservation]:
+    """Total hospital beds, national, annual.
+
+    One workbook sheet per year, cantonal breakdown. The "Total" row (right
+    after the header block, before the per-region rows) is the national
+    figure; column offsets are stable across sheets even though header
+    labels vary slightly year to year.
+    """
+    workbook = _fetch_workbook(_HOSPITAL_BEDS_XLSX_URL)
+    observations: list[RawObservation] = []
+    for sheet_name in workbook.sheetnames:
+        if not sheet_name.isdigit():
+            continue
+        sheet = workbook[sheet_name]
+        total_row = next(
+            (row for row in sheet.iter_rows(values_only=True) if row[0] == "Total"), None
+        )
+        if total_row is None or not isinstance(total_row[7], int | float):
+            continue
+        observations.append(
+            RawObservation(date=dt.date(int(sheet_name), 1, 1), value=float(total_row[7]))
+        )
+    observations.sort(key=lambda obs: obs.date)
     return observations

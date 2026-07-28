@@ -1,12 +1,19 @@
+from io import BytesIO
+
+import openpyxl
 import respx
 from httpx import Response
 
 from ch_at_a_glance.collectors.bfs import (
     _GDP_GROWTH_CSV_URL,
+    _HOSPITAL_BEDS_XLSX_URL,
+    _JOB_VACANCIES_PX_URL,
     _POPULATION_COMPONENTS_CSV_URL,
     _UNEMPLOYMENT_CSV_URL,
     _WAGE_INDEX_CSV_URL,
     fetch_gdp_growth,
+    fetch_hospital_beds,
+    fetch_job_vacancies,
     fetch_net_migration,
     fetch_real_wages,
     fetch_unemployment_rate,
@@ -92,3 +99,53 @@ def test_fetch_unemployment_rate_filters_to_national_percentage_series() -> None
     assert observations[0].date.isoformat() == "2023-01-01"
     assert observations[0].value == 4.90
     assert observations[1].value == 5.14
+
+
+_JOB_VACANCIES_PX = (
+    'STUB="Offene Stellen","Grossregion";\n'
+    'VALUES("Quartal")="2020Q1","2020Q2";\n'
+    "DATA=\n"
+    '"..." 10\n'
+    "20 30\n"
+    "40 50\n"
+    "60 70;\n"
+)
+
+
+@respx.mock
+def test_fetch_job_vacancies_reads_first_data_row_as_national_total() -> None:
+    respx.get(_JOB_VACANCIES_PX_URL).mock(
+        return_value=Response(200, content=_JOB_VACANCIES_PX.encode("iso-8859-15"))
+    )
+
+    observations = fetch_job_vacancies()
+
+    assert len(observations) == 1
+    assert observations[0].date.isoformat() == "2020-04-01"
+    assert observations[0].value == 10.0
+
+
+@respx.mock
+def test_fetch_hospital_beds_reads_total_row_per_year_sheet() -> None:
+    workbook = openpyxl.Workbook()
+    workbook.remove(workbook.active)
+    for year, beds in ((2022, 37969.9), (2023, 38100.0)):
+        sheet = workbook.create_sheet(str(year))
+        sheet.append(["header"])
+        sheet.append([None])
+        sheet.append(["Total", 22522.1, 1284600, 8541.2, 83876, 6906.6, 94827, beds, 1463303])
+        sheet.append(
+            ["Genferseeregion", 4686.9, 231622, 1052.4, 12274, 1587.2, 22618, 7326.5, 266514]
+        )
+    buffer = BytesIO()
+    workbook.save(buffer)
+
+    respx.get(_HOSPITAL_BEDS_XLSX_URL).mock(return_value=Response(200, content=buffer.getvalue()))
+
+    observations = fetch_hospital_beds()
+
+    assert len(observations) == 2
+    assert observations[0].date.isoformat() == "2022-01-01"
+    assert observations[0].value == 37969.9
+    assert observations[1].date.isoformat() == "2023-01-01"
+    assert observations[1].value == 38100.0
