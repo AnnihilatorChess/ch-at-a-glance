@@ -56,4 +56,43 @@ INDICATOR_REGISTRY: list[IndicatorDefinition] = [
         note="CHF Swiss Confederation bond issues, 10-year yield, monthly (SNB data portal)",
         collector=snb.fetch_10y_bond_yield,
     ),
+    IndicatorDefinition(
+        slug="policy-rate",
+        label="SNB policy rate",
+        category="Living Standards",
+        unit="%",
+        direction="bad",
+        note="Swiss National Bank policy rate, daily (SNB data portal)",
+        collector=snb.fetch_policy_rate,
+    ),
+    IndicatorDefinition(
+        slug="real-wages",
+        label="Real wages",
+        category="Living Standards",
+        unit=" index",
+        direction="good",
+        note=(
+            "Swiss Wage Index, real (inflation-adjusted), whole economy, base 2015=100, "
+            "annual (BFS)"
+        ),
+        collector=bfs.fetch_real_wages,
+    ),
+    IndicatorDefinition(
+        slug="prison-population",
+        label="Prison population",
+        category="Crime",
+        unit="",
+        direction="neutral",
+        note="Average daily prison population, annual (BFS, Straf- und Massnahmenvollzug)",
+        collector=bfs.fetch_prison_population,
+    ),
+    IndicatorDefinition(
+        slug="net-migration",
+        label="Net migration",
+        category="Immigration",
+        unit="",
+        direction="neutral",
+        note="Net migration (immigration minus emigration), annual (BFS population statistics)",
+        collector=bfs.fetch_net_migration,
+    ),
 ]
