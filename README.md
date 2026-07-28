@@ -30,4 +30,6 @@ uv run ch-dashboard serve          # run the minimal FastAPI frontend, for local
 
 Daily is a deliberate over-poll: source cadences range from daily (SNB rates) to annual (most BFS series), and a run that finds nothing new just logs "0 new" and exits -- see `pipeline.py`.
 
-`data/snapshot.json` and `docs/index.html` are the two generated files tracked in git (everything else generated is gitignored); they're what the workflow commits. GitHub Pages is configured to serve `docs/` from `main`, so the daily commit is also the deploy -- no separate build/deploy step. The FastAPI server (`web/app.py`) stays for local dev only; `web/render.py` renders the same Jinja2 template and SVG sparklines without needing a running server, which is what actually ships to Pages.
+`data/snapshot.json` and `docs/index.html` are the two generated files tracked in git (everything else generated is gitignored); they're what the workflow commits. GitHub Pages is configured to serve `docs/` from `master`, so the daily commit is also the deploy -- no separate build/deploy step. The FastAPI server (`web/app.py`) stays for local dev only; `web/render.py` renders the same Jinja2 template and SVG sparklines without needing a running server, which is what actually ships to Pages.
+
+Live at <https://annihilatorchess.github.io/ch-at-a-glance/>.
