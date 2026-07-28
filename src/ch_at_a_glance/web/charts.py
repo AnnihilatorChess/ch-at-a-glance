@@ -81,9 +81,9 @@ def sparkline_svg(
         f'stroke-opacity="0.35" stroke-width="1.5" stroke-linejoin="round" '
         f'stroke-linecap="round" />'
         f"{highlight_svg}"
-        f'<text x="2" y="{height}" font-size="10" fill="currentColor" fill-opacity="0.5">'
+        f'<text x="2" y="{height - 3}" font-size="10" fill="currentColor" fill-opacity="0.5">'
         f"{first_year}</text>"
-        f'<text x="{width - 2}" y="{height}" font-size="10" fill="currentColor" '
+        f'<text x="{width - 2}" y="{height - 3}" font-size="10" fill="currentColor" '
         f'fill-opacity="0.5" text-anchor="end">{last_year}</text>'
         f"</svg>"
     )

@@ -27,6 +27,7 @@ def _get_or_create_indicator(session: Session, definition: IndicatorDefinition) 
             unit=definition.unit,
             direction=definition.direction,
             note=definition.note,
+            source_url=definition.source_url,
         )
         session.add(indicator)
         session.flush()
@@ -37,6 +38,7 @@ def _get_or_create_indicator(session: Session, definition: IndicatorDefinition) 
     indicator.unit = definition.unit
     indicator.direction = definition.direction
     indicator.note = definition.note
+    indicator.source_url = definition.source_url
     return indicator
 
 

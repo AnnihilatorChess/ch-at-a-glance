@@ -23,6 +23,7 @@ class IndicatorSnapshot:
     category: str
     unit: str
     note: str
+    source_url: str
     now: float | None
     change: dict[str, float | None]
     colour: dict[str, Colour]
@@ -66,6 +67,7 @@ def snapshot(indicator: Indicator) -> IndicatorSnapshot:
         category=indicator.category,
         unit=indicator.unit,
         note=indicator.note,
+        source_url=indicator.source_url,
         now=now_value,
         change=change,
         colour=colour,

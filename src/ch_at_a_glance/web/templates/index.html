@@ -90,7 +90,8 @@
     padding: 0.55rem 0.7rem; border-radius: 8px; font-size: 0.75rem; font-weight: 400;
     width: 220px; line-height: 1.35; text-align: left; z-index: 5; transition: opacity 0.12s;
   }
-  .info:hover .tooltip, .info:focus .tooltip, .info:focus-visible .tooltip { visibility: visible; opacity: 1; }
+  .info .tooltip a { color: inherit; text-decoration: underline; font-weight: 600; white-space: nowrap; }
+  .info:hover .tooltip, .info:focus-within .tooltip { visibility: visible; opacity: 1; }
 
   .now { font-size: 1.7rem; font-weight: 700; margin: 0.35rem 0 0.15rem; color: var(--grey); white-space: nowrap; }
   .now.green { color: var(--green); } .now.red { color: var(--red); }
@@ -126,7 +127,7 @@
 
   <style>
     {% for cat in categories %}
-    #cat-{{ loop.index }}:checked ~ .grid .card:not([data-category="{{ cat }}"]) { display: none; }
+    main:has(#cat-{{ loop.index }}:checked) .card:not([data-category="{{ cat }}"]) { display: none; }
     {% endfor %}
   </style>
 
@@ -136,7 +137,9 @@
       <div class="category">{{ c.category }}</div>
       <div class="label-row">
         <span class="label">{{ c.label }}</span>
-        <span class="info" tabindex="0">i<span class="tooltip">{{ c.note }}</span></span>
+        <span class="info" tabindex="0">i<span class="tooltip">{{ c.note }}
+          {% if c.source_url %}<a href="{{ c.source_url }}" target="_blank" rel="noopener">Source</a>{% endif %}
+        </span></span>
       </div>
       {% if c.now is not none %}
         <div class="now {{ c.colour['1y'] }}">{{ c.now_display }}{{ c.unit }}</div>

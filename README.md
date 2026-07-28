@@ -14,6 +14,8 @@ Python 3.12, uv, SQLAlchemy 2.0 + Alembic, SQLite (Postgres-ready), httpx, typer
 
 Still missing, no working structured national data source found after a real attempt: housing starts, petrol/diesel/electricity price, PKS shoplifting and other crime-type breakdowns, asylum applications, SNB gold reserves/cash in circulation, national vehicle registrations, consumer confidence, chocolate/wine/cheese production, health insurance premiums, naturalizations, foreign population share. See `docs/DESIGN.md` for what was tried.
 
+Several indicators lag "now" by 1-5 years (prison population, net migration, GDP growth, unemployment, life expectancy: ~2.5 years; hospital beds: ~4.5 years; CO2 emissions: ~3.5 years). Checked whether a newer edition existed for the two worst (hospital beds, CO2) and found none -- this is the actual publication lag of BFS's hospital admin statistics and the FOEN/BAFU greenhouse gas inventory, not a stale/orphaned source like the CPI bug below. The CPI collector *was* a real bug of that kind: its original BFS asset had silently stopped updating in December 2020 while every other source was current; fixed by switching to canton Zug's actively-maintained mirror of the same national index.
+
 ## Usage
 
 ```bash

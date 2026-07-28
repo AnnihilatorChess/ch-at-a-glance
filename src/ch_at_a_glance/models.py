@@ -27,6 +27,7 @@ class Indicator(Base):
     unit: Mapped[str] = mapped_column(String(16))
     direction: Mapped[str] = mapped_column(String(16))
     note: Mapped[str] = mapped_column(String(256))
+    source_url: Mapped[str] = mapped_column(String(512), default="")
 
     observations: Mapped[list[Observation]] = relationship(
         back_populates="indicator",
