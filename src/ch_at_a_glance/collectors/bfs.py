@@ -49,6 +49,12 @@ _JOB_VACANCIES_PX_URL = "https://dam-api.bfs.admin.ch/hub/api/dam/assets/3658381
 # "Krankenhaeuser: Betten und Hospitalisierungen nach Aktivitaetstyp und Kanton".
 _HOSPITAL_BEDS_XLSX_URL = "https://dam-api.bfs.admin.ch/hub/api/dam/assets/28625193/master"
 
+# "Lebenserwartung, 2000-2024" (life expectancy at birth, by sex).
+_LIFE_EXPECTANCY_XLSX_URL = "https://dam-api.bfs.admin.ch/hub/api/dam/assets/36142087/master"
+
+# "Treibhausgasemissionen nach Verursachergruppen" (greenhouse gas emissions by source sector).
+_CO2_EMISSIONS_XLSX_URL = "https://dam-api.bfs.admin.ch/hub/api/dam/assets/36181929/master"
+
 
 def _fetch_csv_rows(url: str) -> list[dict[str, str]]:
     with httpx.Client(timeout=30.0, headers=_HEADERS, follow_redirects=True) as client:
@@ -227,3 +233,58 @@ def fetch_hospital_beds() -> list[RawObservation]:
         )
     observations.sort(key=lambda obs: obs.date)
     return observations
+
+
+def fetch_life_expectancy() -> list[RawObservation]:
+    """Life expectancy at birth, national, annual.
+
+    The sheet has an annual block of columns for men followed by an
+    identical annual block for women, both on the same "Bei Geburt" (at
+    birth) row. The "Maenner"/"Frauen" sex label (row 4) is only set on the
+    first column of each block (a merged cell), so it's forward-filled here
+    to tell the two blocks apart; national figure is the simple average of
+    the two, not population-weighted.
+    """
+    workbook = _fetch_workbook(_LIFE_EXPECTANCY_XLSX_URL)
+    sheet = workbook[workbook.sheetnames[0]]
+    rows = list(sheet.iter_rows(values_only=True))
+    sex_row, year_row = rows[4], rows[5]
+    at_birth_row = next(row for row in rows if row[0] == "Bei Geburt")
+
+    current_sex: object = None
+    by_year: dict[int, dict[object, float]] = {}
+    for sex_label, year, value in zip(sex_row, year_row, at_birth_row, strict=True):
+        if sex_label is not None:
+            current_sex = sex_label
+        if not isinstance(year, int) or not isinstance(value, int | float) or current_sex is None:
+            continue
+        by_year.setdefault(year, {})[current_sex] = value
+
+    observations: list[RawObservation] = []
+    for year, values in sorted(by_year.items()):
+        if "Männer" not in values or "Frauen" not in values:
+            continue
+        men, women = values["Männer"], values["Frauen"]
+        observations.append(RawObservation(date=dt.date(year, 1, 1), value=(men + women) / 2))
+    return observations
+
+
+def fetch_co2_emissions() -> list[RawObservation]:
+    """Total greenhouse gas emissions, national, annual, CO2-equivalent (Mio. t).
+
+    The sheet has one data block per source sector (energy, transport,
+    industry, agriculture, waste), each with its own "Jahr" (year) column.
+    There is no precomputed grand-total row, so this sums the CO2-equivalent
+    column across every sector for each year.
+    """
+    workbook = _fetch_workbook(_CO2_EMISSIONS_XLSX_URL)
+    sheet = workbook[workbook.sheetnames[0]]
+    totals: dict[int, float] = {}
+    for row in sheet.iter_rows(values_only=True):
+        year, co2_equivalent = row[1], row[5]
+        if isinstance(year, int) and isinstance(co2_equivalent, int | float):
+            totals[year] = totals.get(year, 0.0) + co2_equivalent
+    return [
+        RawObservation(date=dt.date(year, 1, 1), value=total)
+        for year, total in sorted(totals.items())
+    ]

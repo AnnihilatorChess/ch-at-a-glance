@@ -5,15 +5,19 @@ import respx
 from httpx import Response
 
 from ch_at_a_glance.collectors.bfs import (
+    _CO2_EMISSIONS_XLSX_URL,
     _GDP_GROWTH_CSV_URL,
     _HOSPITAL_BEDS_XLSX_URL,
     _JOB_VACANCIES_PX_URL,
+    _LIFE_EXPECTANCY_XLSX_URL,
     _POPULATION_COMPONENTS_CSV_URL,
     _UNEMPLOYMENT_CSV_URL,
     _WAGE_INDEX_CSV_URL,
+    fetch_co2_emissions,
     fetch_gdp_growth,
     fetch_hospital_beds,
     fetch_job_vacancies,
+    fetch_life_expectancy,
     fetch_net_migration,
     fetch_real_wages,
     fetch_unemployment_rate,
@@ -149,3 +153,52 @@ def test_fetch_hospital_beds_reads_total_row_per_year_sheet() -> None:
     assert observations[0].value == 37969.9
     assert observations[1].date.isoformat() == "2023-01-01"
     assert observations[1].value == 38100.0
+
+
+@respx.mock
+def test_fetch_life_expectancy_averages_men_and_women_by_year() -> None:
+    workbook = openpyxl.Workbook()
+    sheet = workbook.active
+    sheet.append(["header"])
+    sheet.append(["filler"])
+    sheet.append(["filler"])
+    sheet.append(["filler"])
+    sheet.append([None, "Männer", None, "Frauen", None])
+    sheet.append([None, 2020, 2021, 2020, 2021])
+    sheet.append(["Bei Geburt", 81.0, 81.5, 85.0, 85.5])
+    buffer = BytesIO()
+    workbook.save(buffer)
+
+    respx.get(_LIFE_EXPECTANCY_XLSX_URL).mock(return_value=Response(200, content=buffer.getvalue()))
+
+    observations = fetch_life_expectancy()
+
+    assert len(observations) == 2
+    assert observations[0].date.isoformat() == "2020-01-01"
+    assert observations[0].value == 83.0
+    assert observations[1].date.isoformat() == "2021-01-01"
+    assert observations[1].value == 83.5
+
+
+@respx.mock
+def test_fetch_co2_emissions_sums_across_sector_blocks_per_year() -> None:
+    workbook = openpyxl.Workbook()
+    sheet = workbook.active
+    sheet.append(["Energie"])
+    sheet.append([None, 2022, 1.0, 1.0, 1.0, 25.0])
+    sheet.append([None, 2023, 1.0, 1.0, 1.0, 24.0])
+    sheet.append(["Transport"])
+    sheet.append([None, 2022, 1.0, 1.0, 1.0, 15.0])
+    sheet.append([None, 2023, 1.0, 1.0, 1.0, 14.0])
+    buffer = BytesIO()
+    workbook.save(buffer)
+
+    respx.get(_CO2_EMISSIONS_XLSX_URL).mock(return_value=Response(200, content=buffer.getvalue()))
+
+    observations = fetch_co2_emissions()
+
+    assert len(observations) == 2
+    assert observations[0].date.isoformat() == "2022-01-01"
+    assert observations[0].value == 40.0
+    assert observations[1].date.isoformat() == "2023-01-01"
+    assert observations[1].value == 38.0

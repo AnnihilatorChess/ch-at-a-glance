@@ -10,9 +10,9 @@ Python 3.12, uv, SQLAlchemy 2.0 + Alembic, SQLite (Postgres-ready), httpx, typer
 
 ## Status
 
-13 indicators live across Economy, Living Standards, Government, Housing, Health, Crime, and Immigration: CPI inflation, GDP growth, unemployment rate, real wages, job vacancies, SNB policy rate, 10-year bond yield, federal gross debt ratio, prison population, net migration, hospital beds, and two cantonal proxies (house prices and 2-room rent, both canton-only since no national series exists). Sources are BFS (via opendata.swiss CSV/XLS, its PxWeb API never worked), a hand-rolled parser for one BFS PC-Axis file (job vacancies), SNB's undocumented JSON API, the EFV's federal budget CSV, and two cantonal open-data portals (Zurich, Zug).
+16 indicators live across Economy, Living Standards, Government, Housing, Health, Crime, Immigration, and Environment: CPI inflation, GDP growth, unemployment rate, real wages, job vacancies, SNB policy rate, 10-year bond yield, federal gross debt ratio, prison population, net migration, hospital beds, life expectancy, CO2 emissions, hydropower share of electricity, and two cantonal proxies (house prices and 2-room rent, both canton-only since no national series exists). Sources are BFS (via opendata.swiss CSV/XLS, its PxWeb API never worked), a hand-rolled parser for one BFS PC-Axis file (job vacancies), SNB's undocumented JSON API, the EFV's federal budget CSV, BFE's electricity balance CSV, and two cantonal open-data portals (Zurich, Zug).
 
-Still missing, no working structured national data source found after a real attempt: housing starts, petrol/diesel/electricity price, PKS shoplifting and other crime-type breakdowns, asylum applications, SNB gold reserves/cash in circulation, national vehicle registrations, consumer confidence. See `docs/DESIGN.md` for what was tried.
+Still missing, no working structured national data source found after a real attempt: housing starts, petrol/diesel/electricity price, PKS shoplifting and other crime-type breakdowns, asylum applications, SNB gold reserves/cash in circulation, national vehicle registrations, consumer confidence, chocolate/wine/cheese production, health insurance premiums, naturalizations, foreign population share. See `docs/DESIGN.md` for what was tried.
 
 ## Usage
 

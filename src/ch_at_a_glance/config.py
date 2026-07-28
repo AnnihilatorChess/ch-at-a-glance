@@ -8,7 +8,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Literal
 
-from ch_at_a_glance.collectors import bfs, cantonal, efv, snb
+from ch_at_a_glance.collectors import bfe, bfs, cantonal, efv, snb
 from ch_at_a_glance.collectors.base import Collector
 
 Direction = Literal["good", "bad", "neutral"]
@@ -20,6 +20,7 @@ Category = Literal[
     "Crime",
     "Immigration",
     "Government",
+    "Environment",
 ]
 
 
@@ -168,5 +169,47 @@ INDICATOR_REGISTRY: list[IndicatorDefinition] = [
             "proxy, not a Swiss-wide figure."
         ),
         collector=cantonal.fetch_rent_zug,
+    ),
+    IndicatorDefinition(
+        slug="life-expectancy",
+        label="Life expectancy at birth",
+        category="Health",
+        unit=" years",
+        direction="good",
+        note=(
+            "Life expectancy at birth, national, annual. Simple average of the "
+            "separately published men's and women's figures, not "
+            "population-weighted (BFS mortality statistics)"
+        ),
+        collector=bfs.fetch_life_expectancy,
+    ),
+    IndicatorDefinition(
+        slug="co2-emissions",
+        label="Greenhouse gas emissions",
+        category="Environment",
+        unit=" Mt CO2-eq",
+        direction="bad",
+        note=(
+            "Total greenhouse gas emissions, national, annual, CO2-equivalent. "
+            "Summed across all published source sectors (energy, transport, "
+            "industry, agriculture, waste) since no precomputed total exists "
+            "(FOEN/BAFU inventory, published via BFS)"
+        ),
+        collector=bfs.fetch_co2_emissions,
+    ),
+    IndicatorDefinition(
+        slug="hydropower-share",
+        label="Hydropower share of electricity",
+        category="Environment",
+        unit="%",
+        direction="good",
+        note=(
+            "Hydropower (run-of-river + storage) as a share of net electricity "
+            "production, national, annual. Not a full \"renewable share\" -- "
+            "the CSV's finer solar/wind/biomass breakdown doesn't reconcile "
+            "against its own totals, so only the unambiguous hydro figures are "
+            "used (BFE electricity balance)"
+        ),
+        collector=bfe.fetch_hydropower_share,
     ),
 ]
