@@ -2721,10 +2721,10 @@
     "parent": "Health",
     "unit": " years",
     "note": "Life expectancy at birth, averaged across men and women, annual.",
-    "now": 84.15,
-    "change": 0.15000000000000568,
-    "change2": 0.6500000000000057,
-    "change5": 0.4000000000000057,
+    "now": 84.5,
+    "change": 0.3499999999999943,
+    "change2": 0.5,
+    "change5": 1.4500000000000028,
     "colour": "green",
     "colour2": "green",
     "colour5": "green",
@@ -2803,6 +2803,9 @@
       },
       {
         "2024-01-01": 84.15
+      },
+      {
+        "2025-01-01": 84.5
       }
     ]
   },
