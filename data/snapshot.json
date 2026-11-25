@@ -1351,12 +1351,12 @@
     "parent": "Housing",
     "unit": " CHF/month",
     "note": "Median net rent for a 2-room apartment in canton Zug, quarterly (no national rent series exists as open data).",
-    "now": 2299.0,
-    "change": 19.0,
-    "change2": 198.0,
-    "change5": 549.0,
-    "colour": "red",
-    "colour2": "red",
+    "now": 2164.0,
+    "change": -107.0,
+    "change2": -86.0,
+    "change5": 439.0,
+    "colour": "green",
+    "colour2": "green",
     "colour5": "red",
     "data": [
       {
@@ -1631,6 +1631,9 @@
       },
       {
         "2026-01-01": 2299.0
+      },
+      {
+        "2026-07-01": 2164.0
       }
     ]
   },
